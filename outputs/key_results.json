@@ -1,0 +1,104 @@
+{
+  "n_jours_train": 2191,
+  "n_jours_test": 365,
+  "periode_train": [
+    "2018-01-01",
+    "2024-12-31"
+  ],
+  "periode_test": [
+    "2025-01-01",
+    "2025-12-31"
+  ],
+  "r2_in_sample": 0.9462900929974303,
+  "r2_adj_in_sample": 0.9457700800665617,
+  "hdd_coef_mw_par_degre_jour": 1514.988639833209,
+  "hdd_pvalue": 0.0,
+  "cdd_coef_mw_par_degre_jour": 972.1055489421161,
+  "cdd_pvalue": 7.367800338725526e-11,
+  "mae_test_mw": 2019.350390871556,
+  "rmse_test_mw": 2459.15902951868,
+  "mape_test_pct": 4.155079753623834,
+  "conso_moyenne_test_mw": 50671.699942922365,
+  "pire_jours": [
+    {
+      "date": "2025-11-01",
+      "temp_france": 14.921005154639175,
+      "conso_moyenne_mw": 44537.75,
+      "residual_mw": 8032.170641121687,
+      "is_ferie": true,
+      "jour_semaine": 5
+    },
+    {
+      "date": "2025-11-23",
+      "temp_france": 3.8490764604811,
+      "conso_moyenne_mw": 63634.25,
+      "residual_mw": 6266.096854859032,
+      "is_ferie": false,
+      "jour_semaine": 6
+    },
+    {
+      "date": "2025-11-24",
+      "temp_france": 8.11973797250859,
+      "conso_moyenne_mw": 63130.270833333336,
+      "residual_mw": 6205.691669007843,
+      "is_ferie": false,
+      "jour_semaine": 0
+    },
+    {
+      "date": "2025-05-29",
+      "temp_france": 19.55560567010309,
+      "conso_moyenne_mw": 39858.97916666666,
+      "residual_mw": 5759.983188403683,
+      "is_ferie": true,
+      "jour_semaine": 3
+    },
+    {
+      "date": "2025-12-07",
+      "temp_france": 11.487800687285224,
+      "conso_moyenne_mw": 53044.22916666666,
+      "residual_mw": 5324.090890431689,
+      "is_ferie": false,
+      "jour_semaine": 6
+    },
+    {
+      "date": "2025-11-28",
+      "temp_france": 6.671563573883161,
+      "conso_moyenne_mw": 64650.66666666666,
+      "residual_mw": 5056.807484665798,
+      "is_ferie": false,
+      "jour_semaine": 4
+    },
+    {
+      "date": "2025-06-27",
+      "temp_france": 23.97422680412371,
+      "conso_moyenne_mw": 47108.16666666666,
+      "residual_mw": 4974.186305352399,
+      "is_ferie": false,
+      "jour_semaine": 4
+    },
+    {
+      "date": "2025-11-27",
+      "temp_france": 4.795103092783506,
+      "conso_moyenne_mw": 68040.41666666667,
+      "residual_mw": 4889.284326794019,
+      "is_ferie": false,
+      "jour_semaine": 3
+    },
+    {
+      "date": "2025-07-04",
+      "temp_france": 24.122229381443297,
+      "conso_moyenne_mw": 48246.04166666666,
+      "residual_mw": 4885.179457767546,
+      "is_ferie": false,
+      "jour_semaine": 4
+    },
+    {
+      "date": "2025-12-06",
+      "temp_france": 9.103071305841924,
+      "conso_moyenne_mw": 58015.833333333336,
+      "residual_mw": 4827.06949234366,
+      "is_ferie": false,
+      "jour_semaine": 5
+    }
+  ]
+}

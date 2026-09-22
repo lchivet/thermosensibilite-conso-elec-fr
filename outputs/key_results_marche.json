@@ -1,0 +1,35 @@
+{
+  "merit_order": {
+    "gaz_moyen_pointe_soir_hiver_gw": 6.07801963294921,
+    "gaz_moyen_creux_nuit_hiver_gw": 4.341794280836535,
+    "ratio_gaz_pointe_vs_creux": 1.399886599827147
+  },
+  "courbe_monotone": {
+    "annee": 2025,
+    "puissance_max_gw": 87.7025,
+    "puissance_min_gw": 30.3635,
+    "puissance_moyenne_gw": 50.67199189405183,
+    "seuil_zone_pointe_gw": 73.336,
+    "facteur_charge_pct": 57.777135080587016,
+    "base_load_approx_gw": 33.702346681922194
+  },
+  "profil_hebdo": {
+    "conso_moyenne_semaine_gw": 53.413246976321695,
+    "conso_moyenne_weekend_gw": 47.85206286002305,
+    "ecart_semaine_weekend_pct": 11.621618346039199,
+    "ecart_pointe_creux_jour_ouvre_gw": 15.072863854656006
+  },
+  "duck_curve": {
+    "charge_residuelle_moyenne_midi_printemps_gw": 38.597927553927555,
+    "part_renouvelable_moyenne_midi_printemps_pct": 23.612238300679557
+  },
+  "trajectoire_renouvelable": {
+    "part_renouvelable_debut_pct": 8.134466831429188,
+    "part_renouvelable_fin_pct": 20.452906687068385,
+    "progression_points_pct": 12.318439855639197,
+    "periode": [
+      "2018-06-30",
+      "2026-06-30"
+    ]
+  }
+}
