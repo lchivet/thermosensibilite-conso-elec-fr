@@ -71,7 +71,7 @@ Deux familles d'erreurs se dégagent nettement :
    intensité (relance du chauffage électrique dans des bâtiments qui se sont refroidis,
    effet cumulatif que les seuls degrés-jours du jour même ne capturent pas).
 
-## 6. Limites assumées (à dire honnêtement en entretien)
+## 6. Limites
 
 - **Proxy de température, pas le maillage officiel RTE.** 11 villes pondérées par
   population régionale plutôt que le maillage RTE/Météo-France pondéré par la
@@ -100,7 +100,7 @@ météo en un **risque volume quantifiable** :
 - **Prévision / forecast** : l'écart type de l'erreur de prévision (~2-2,5 GW, ~4 % de
   la conso) donne un ordre de grandeur du risque à couvrir jour par jour sur un
   portefeuille de clients — c'est directement l'écart entre le forecast et la conso
-  effective mentionné dans la fiche de poste.
+  effective qu'un pricing analyst cherche à minimiser.
 - **Risque volume vs risque prix** : quand il fait plus froid que prévu, un fournisseur
   qui a vendu un volume fixe à un client doit acheter le complément sur le marché spot —
   souvent au moment où les prix sont les plus hauts (forte demande système). La

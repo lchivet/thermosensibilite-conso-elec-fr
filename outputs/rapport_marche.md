@@ -99,29 +99,15 @@ ci-dessous), plus ce creux se creuse et plus les épisodes de prix négatifs ou 
 deviennent fréquents — un risque (ou une opportunité, selon le profil du client) que le
 pricing analyst doit anticiper.
 
-## 5. Une tendance de fond à citer en entretien
+## 5. Une tendance de fond structurante
 
 ![Trajectoire renouvelable](figures/15_trajectoire_renouvelable.png)
 
 > La part éolien + solaire dans la consommation française (moyenne mobile 12 mois) est
 > passée d'**≈ 8,1 % mi-2018** à **≈ 20,5 % mi-2026** — soit **+12,3 points** en 8 ans.
 
-C'est un fait chiffré simple et solide à ressortir sur la question "quels sont les
-grands enjeux du marché électrique européen aujourd'hui" : la part croissante du
-renouvelable variable **mécaniquement** accentue le phénomène de la section 4 (creux de
-midi, prix négatifs plus fréquents) et renforce la valeur, pour un fournisseur, de
-bien modéliser où se situe le profil de consommation de chaque client par rapport à ces
-heures — ce qui relie directement ce chapitre à l'option A du projet (thermosensibilité)
-et à la section 1.3 des tâches transverses de l'équipe pricing.
-
-## Comment utiliser ce document en entretien
-
-Pas besoin d'écran : chaque section ci-dessus tient en 2-3 phrases + un chiffre. La
-structure à suivre à l'oral, pour chaque concept :
-
-1. **Le mécanisme** (une phrase, ex. "le merit order classe les centrales par coût
-   marginal croissant").
-2. **La preuve chiffrée** (ex. "sur les données RTE 2018-2026, le gaz tourne 1,4× plus
-   fort à la pointe du soir qu'en creux de nuit").
-3. **L'implication pricing** (ex. "donc un client thermosensible qui consomme
-   justement aux heures de pointe coûte plus cher à couvrir qu'un profil plat").
+La part croissante du renouvelable variable **mécaniquement** accentue le phénomène de
+la section 4 (creux de midi, prix négatifs plus fréquents) et renforce la valeur, pour
+un fournisseur, de bien modéliser où se situe le profil de consommation de chaque
+client par rapport à ces heures — ce qui relie directement ce chapitre à l'analyse de
+thermosensibilité ([`rapport.md`](rapport.md)) et à la partie [pricing](rapport_pricing.md).

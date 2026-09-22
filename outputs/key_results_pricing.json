@@ -1,0 +1,44 @@
+{
+  "parametres": {
+    "part_marche_portefeuille_illustratif_pct": 1.0,
+    "prix_capacite_illustratif_eur_par_mw_an": 30000,
+    "volatilite_prix_illustrative_eur_par_mwh": 80,
+    "prix_proxy_bas_eur_mwh": 30,
+    "prix_proxy_haut_eur_mwh": 150,
+    "marge_commerciale_eur_mwh": 3.0,
+    "seuil_heures_pointe": 200
+  },
+  "conso_france_annuelle_moyenne_mwh": 454840501.14285713,
+  "metriques_profils": {
+    "plat": {
+      "percentile_prix_pondere": 50.06849131100427,
+      "contribution_pointe_pct": 2.4173403883860223
+    },
+    "tertiaire": {
+      "percentile_prix_pondere": 57.124235021712636,
+      "contribution_pointe_pct": 3.818890844462851
+    },
+    "thermosensible": {
+      "percentile_prix_pondere": 53.13009135002084,
+      "contribution_pointe_pct": 4.219168360075729
+    }
+  },
+  "risque_climatique_reel": {
+    "hdd_annuel_moyen": 2069.709714040255,
+    "hdd_annuel_ecart_type": 112.6211419856352,
+    "hdd_coef_portefeuille_mw_par_dj": 15.15,
+    "portefeuille_volume_annuel_mwh": 4548405.011428571,
+    "variation_volume_ecart_type_mwh": 40949.04722597696,
+    "variation_cout_ecart_type_eur": 3275923.7780781565,
+    "prime_risque_eur_mwh": 0.7202357243576355
+  },
+  "construction_prix": {
+    "ecart_percentile_prix": 3.061600039016568,
+    "ecart_contribution_pointe_pts": 1.8018279716897068,
+    "cout_forme_eur_mwh": 3.6739200468198816,
+    "cout_capacite_eur_mwh": 0.06170643738663379,
+    "prime_risque_eur_mwh": 0.7202357243576355,
+    "marge_eur_mwh": 3.0,
+    "surcout_total_eur_mwh": 7.455862208564151
+  }
+}
