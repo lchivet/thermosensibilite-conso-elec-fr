@@ -99,6 +99,13 @@ ci-dessous), plus ce creux se creuse et plus les épisodes de prix négatifs ou 
 deviennent fréquents — un risque (ou une opportunité, selon le profil du client) que le
 pricing analyst doit anticiper.
 
+**Confirmation sur données de prix réelles** (ENTSO-E, 2018-2026, voir
+[`rapport_pricing.md`](rapport_pricing.md)) : sur la période, 1,74 % des heures ont un
+prix négatif ; sur ces heures, la part éolien + solaire atteint en moyenne 27,1 % contre
+13,2 % en moyenne générale, et leur distribution horaire pointe précisément entre 11h et
+17h — exactement le mécanisme décrit ci-dessus. La fréquence des prix négatifs est
+passée de 0,1 % des heures en 2018 à 5,9 % en 2025.
+
 ## 5. Une tendance de fond structurante
 
 ![Trajectoire renouvelable](figures/15_trajectoire_renouvelable.png)

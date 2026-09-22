@@ -1,24 +1,25 @@
 """
 Construction indicative du prix d'un contrat de fourniture — angle pricing analyst.
 
-Objectif : montrer, à partir des données déjà collectées (consommation, mix de
-production, degrés-jours), comment un profil de consommation se traduit en
-composantes de prix (coût de forme, coût de capacité, prime de risque volume),
-sans disposer de vraies données de prix de marché.
+Objectif : montrer, à partir des vraies données de prix day-ahead (ENTSO-E, via
+src/fetch_price.py et src/model_price.py) et du mix de production RTE, comment un
+profil de consommation se traduit en composantes de prix (coût de forme, coût de
+capacité, prime de risque volume).
 
-Principe : en l'absence de prix spot réel, on construit un indice de prix relatif
-dérivé du merit order (rang de la charge résiduelle = consommation − éolien − solaire :
-plus elle est élevée, plus le système fait appel à des moyens de production coûteux).
-Cet indice sert à comparer des profils entre eux — il n'a pas vocation à reproduire un
-niveau de prix en euros réel. Chaque paramètre non directement calculé à partir des
-données (poids des profils synthétiques, prix de la garantie de capacité, prime de
-risque, marge) est un paramètre explicite, réuni dans PARAMETRES ci-dessous.
+Trois composantes sur quatre sont calculées directement sur données réelles ; seuls le
+prix de la garantie de capacité et la marge commerciale restent des paramètres
+explicites (réunis dans PARAMETRES ci-dessous), faute de source ouverte pour le premier
+et par nature pour le second.
+
+Prérequis : avoir exécuté src/fetch_price.py puis src/model_price.py (qui produit
+data/processed/hourly_price_dataset.csv).
 
 Sortie : outputs/figures/2x_*.png + outputs/key_results_pricing.json
 """
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -51,54 +52,47 @@ COL_RED = "#e34948"
 COL_GREY = "#c3c2b7"
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 FIG_DIR = ROOT / "outputs" / "figures"
 OUT_DIR = ROOT / "outputs"
 
+HOURLY_PRICE_PATH = PROCESSED_DIR / "hourly_price_dataset.csv"
+DAILY_DATASET_PATH = PROCESSED_DIR / "daily_dataset.csv"
+
 # ---------------------------------------------------------------------------
-# Paramètres explicites (hypothèses de construction, non calculés sur les données)
+# Paramètres explicites restants (tout le reste est calculé sur données réelles)
 # ---------------------------------------------------------------------------
 PARAMETRES = {
-    "part_marche_portefeuille_illustratif_pct": 1.0,  # portefeuille = 1% de la conso française
+    "part_marche_portefeuille_illustratif_pct": 1.0,  # choix d'échelle : portefeuille = 1% de la conso française
     "prix_capacite_illustratif_eur_par_mw_an": 30000,  # ordre de grandeur des enchères RTE, à remplacer par la vraie valeur publiée
-    "volatilite_prix_illustrative_eur_par_mwh": 80,  # prime de risque : coût d'achat complémentaire en période de tension
-    "prix_proxy_bas_eur_mwh": 30,  # prix illustratif associé au percentile 0 (heures très abondantes, proche des prix négatifs)
-    "prix_proxy_haut_eur_mwh": 150,  # prix illustratif associé au percentile 100 (heures de forte tension système)
     "marge_commerciale_eur_mwh": 3.0,  # marge commerciale forfaitaire
     "seuil_heures_pointe": 200,  # définition de la "zone de pointe" (cf. courbe monotone, rapport_marche.md section 2)
+    "mois_saison_chauffe": [11, 12, 1, 2, 3],  # fenêtre utilisée pour la prime de risque (comparaison jours froids/normaux)
+    "percentile_jour_froid": 90,  # seuil définissant un "jour froid extrême" (percentile de HDD, en saison de chauffe)
 }
 
 HEATING_HOURS = {7, 8, 9, 18, 19, 20, 21}
 
 
 def load_hourly() -> pd.DataFrame:
-    df = pd.read_csv(RAW_DIR / "conso_national.csv", sep=";")
+    if not HOURLY_PRICE_PATH.exists():
+        print(
+            f"[pricing] Dataset introuvable : {HOURLY_PRICE_PATH}\n"
+            "-> Lancer d'abord : python src/fetch_price.py puis python src/model_price.py",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    df = pd.read_csv(HOURLY_PRICE_PATH, parse_dates=["date_heure"])
     df["date_heure"] = pd.to_datetime(df["date_heure"], utc=True)
     df = df.set_index("date_heure").sort_index()
-    for col in ["consommation", "eolien", "solaire"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-    hourly = df[["consommation", "eolien", "solaire"]].resample("1h").mean().dropna()
-    hourly.index = hourly.index.tz_convert("Europe/Paris")
-    hourly["residuelle"] = hourly["consommation"] - hourly["eolien"] - hourly["solaire"]
-    hourly["annee"] = hourly.index.year
-    hourly["mois"] = hourly.index.month
-    hourly["heure"] = hourly.index.hour
-    hourly["jour_semaine"] = hourly.index.dayofweek
-    hourly["date"] = hourly.index.date
-    return hourly
-
-
-def add_price_rank(hourly: pd.DataFrame) -> pd.DataFrame:
-    """Indice de prix proxy = percentile (0-100) de la charge résiduelle, calculé
-    séparément chaque mois pour ne pas confondre effet saisonnier et effet horaire."""
-    hourly = hourly.copy()
-    hourly["prix_rang_percentile"] = (
-        hourly.groupby([hourly["annee"], hourly["mois"]])["residuelle"]
-        .rank(pct=True)
-        * 100
-    )
-    return hourly
+    df.index = df.index.tz_convert("Europe/Paris")
+    df["annee"] = df.index.year
+    df["mois"] = df.index.month
+    df["heure"] = df.index.hour
+    df["jour_semaine"] = df.index.dayofweek
+    df["date"] = df.index.date
+    return df
 
 
 def flag_peak_hours(hourly: pd.DataFrame, top_n: int) -> pd.DataFrame:
@@ -113,8 +107,8 @@ def flag_peak_hours(hourly: pd.DataFrame, top_n: int) -> pd.DataFrame:
 
 
 def load_daily_hdd() -> pd.DataFrame:
-    df = pd.read_csv(PROCESSED_DIR / "daily_dataset.csv", parse_dates=["date"])
-    return df[["date", "hdd", "annee"]]
+    df = pd.read_csv(DAILY_DATASET_PATH, parse_dates=["date"])
+    return df[["date", "hdd", "annee", "mois"]]
 
 
 def build_profiles(hourly: pd.DataFrame, daily_hdd: pd.DataFrame) -> pd.DataFrame:
@@ -149,13 +143,14 @@ def build_profiles(hourly: pd.DataFrame, daily_hdd: pd.DataFrame) -> pd.DataFram
 
 
 def compute_profile_metrics(hourly: pd.DataFrame, profiles: pd.DataFrame) -> dict:
+    """Prix moyen pondéré RÉEL (€/MWh) et contribution aux heures de pointe, par profil."""
     results = {}
     for name in profiles.columns:
         w = profiles[name]
-        percentile_pondere = float((w * hourly["prix_rang_percentile"]).sum())
+        prix_pondere = float((w * hourly["prix_eur_mwh"]).sum())
         contribution_pointe = float((w * hourly["est_heure_pointe"]).sum() * 100)
         results[name] = {
-            "percentile_prix_pondere": percentile_pondere,
+            "prix_pondere_eur_mwh": prix_pondere,
             "contribution_pointe_pct": contribution_pointe,
         }
     return results
@@ -164,21 +159,21 @@ def compute_profile_metrics(hourly: pd.DataFrame, profiles: pd.DataFrame) -> dic
 def plot_profile_comparison(metrics: dict) -> None:
     labels = ["Plat\n(référence)", "Tertiaire\n(bureaux 8h-19h)", "Thermosensible\n(chauffage résidentiel)"]
     keys = ["plat", "tertiaire", "thermosensible"]
-    percentiles = [metrics[k]["percentile_prix_pondere"] for k in keys]
+    prix = [metrics[k]["prix_pondere_eur_mwh"] for k in keys]
     contributions = [metrics[k]["contribution_pointe_pct"] for k in keys]
     x = np.arange(len(keys))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 5))
 
-    b1 = ax1.bar(x, percentiles, color=COL_BLUE, width=0.55)
-    ax1.axhline(50, color=COL_GREY, linestyle="--", linewidth=1, zorder=0)
-    ax1.set_ylim(0, 100)
+    b1 = ax1.bar(x, prix, color=COL_BLUE, width=0.55)
+    ax1.axhline(prix[0], color=COL_GREY, linestyle="--", linewidth=1, zorder=0)
+    ax1.set_ylim(0, max(prix) * 1.25)
     ax1.set_xticks(x)
     ax1.set_xticklabels(labels)
-    ax1.set_ylabel("Percentile de prix pondéré (référence plat = 50)")
-    ax1.set_title("Coût de forme")
-    for rect, val in zip(b1, percentiles):
-        ax1.annotate(f"{val:.0f}", (rect.get_x() + rect.get_width() / 2, val), ha="center", va="bottom", fontsize=9)
+    ax1.set_ylabel("Prix day-ahead réel moyen pondéré (€/MWh)")
+    ax1.set_title("Coût de forme (données de prix réelles)")
+    for rect, val in zip(b1, prix):
+        ax1.annotate(f"{val:.1f}", (rect.get_x() + rect.get_width() / 2, val), ha="center", va="bottom", fontsize=9)
 
     b2 = ax2.bar(x, contributions, color=COL_ORANGE, width=0.55)
     ax2.set_ylim(0, max(contributions) * 1.35)
@@ -195,22 +190,73 @@ def plot_profile_comparison(metrics: dict) -> None:
     plt.close(fig)
 
 
+def compute_real_risk_premium(hourly: pd.DataFrame, daily_hdd: pd.DataFrame, params: dict) -> dict:
+    """Prime de risque RÉELLE : différence de prix observée entre les jours froids
+    extrêmes et les autres jours de la saison de chauffe, appliquée à l'exposition
+    volume réelle d'un portefeuille (thermosensibilité réelle x variabilité
+    interannuelle réelle des degrés-jours)."""
+    season = daily_hdd[daily_hdd["mois"].isin(params["mois_saison_chauffe"])]
+    threshold = season["hdd"].quantile(params["percentile_jour_froid"] / 100)
+    cold_dates = set(season.loc[season["hdd"] >= threshold, "date"].dt.date)
+
+    hourly_season = hourly[hourly["mois"].isin(params["mois_saison_chauffe"])]
+    is_cold_day = hourly_season["date"].isin(cold_dates)
+
+    prix_jour_froid = float(hourly_season.loc[is_cold_day, "prix_eur_mwh"].mean())
+    prix_jour_normal = float(hourly_season.loc[~is_cold_day, "prix_eur_mwh"].mean())
+    prime_prix_froid_eur_mwh = prix_jour_froid - prix_jour_normal
+
+    # Exposition volume réelle : variabilité interannuelle des degrés-jours x
+    # coefficient de thermosensibilité estimé (rapport.md, section 4), pour un
+    # portefeuille à l'échelle choisie dans PARAMETRES.
+    annual_hdd = (
+        daily_hdd[(daily_hdd["annee"] >= 2018) & (daily_hdd["annee"] <= 2025) & (daily_hdd["annee"] != 2020)]
+        .groupby("annee")["hdd"]
+        .sum()
+    )
+    hdd_std = float(annual_hdd.std())
+    part_marche = params["part_marche_portefeuille_illustratif_pct"] / 100
+    hdd_coef_systeme_mw = 1515.0  # coefficient réel estimé (rapport.md, section 4)
+    hdd_coef_portefeuille_mw = hdd_coef_systeme_mw * part_marche
+    variation_volume_mwh = hdd_coef_portefeuille_mw * hdd_std * 24
+
+    conso_france_annuelle_mwh = float(
+        hourly[(hourly["annee"] >= 2018) & (hourly["annee"] <= 2025) & (hourly["annee"] != 2020)]
+        .groupby("annee")["consommation"]
+        .sum()
+        .mean()
+    )
+    portefeuille_volume_mwh = conso_france_annuelle_mwh * part_marche
+
+    variation_cout_eur = variation_volume_mwh * prime_prix_froid_eur_mwh
+    prime_risque_eur_mwh = variation_cout_eur / portefeuille_volume_mwh
+
+    return {
+        "seuil_hdd_jour_froid": float(threshold),
+        "prix_moyen_jour_froid_eur_mwh": prix_jour_froid,
+        "prix_moyen_jour_normal_eur_mwh": prix_jour_normal,
+        "prime_prix_froid_eur_mwh": prime_prix_froid_eur_mwh,
+        "hdd_annuel_ecart_type": hdd_std,
+        "hdd_coef_portefeuille_mw_par_dj": hdd_coef_portefeuille_mw,
+        "conso_france_annuelle_moyenne_mwh": conso_france_annuelle_mwh,
+        "portefeuille_volume_annuel_mwh": portefeuille_volume_mwh,
+        "variation_volume_ecart_type_mwh": variation_volume_mwh,
+        "variation_cout_ecart_type_eur": variation_cout_eur,
+        "prime_risque_eur_mwh": prime_risque_eur_mwh,
+    }
+
+
 def plot_price_waterfall(metrics: dict, params: dict, prime_risque_eur_mwh: float) -> dict:
     """Construit le SURCOÛT (en €/MWh) d'un profil thermosensible par rapport à un
-    profil plat — pas un prix absolu (inconnu, faute de données de marché réelles)."""
+    profil plat, sur données de prix réelles."""
     plat = metrics["plat"]
     thermo = metrics["thermosensible"]
 
-    ecart_percentile = thermo["percentile_prix_pondere"] - plat["percentile_prix_pondere"]
+    cout_forme = thermo["prix_pondere_eur_mwh"] - plat["prix_pondere_eur_mwh"]
     ecart_pointe_pts = thermo["contribution_pointe_pct"] - plat["contribution_pointe_pct"]
 
-    # Coût de forme : conversion percentile -> €/MWh via une droite illustrative
-    # reliant le percentile de prix (0-100, réel) à un ordre de grandeur de prix (€/MWh, illustratif)
-    pente_prix = (params["prix_proxy_haut_eur_mwh"] - params["prix_proxy_bas_eur_mwh"]) / 100
-    cout_forme = ecart_percentile * pente_prix
-
     # Coût de capacité : écart de contribution à la pointe (réel) x prix de la garantie
-    # de capacité ramené à une base horaire (1 MW retenu 1h = 1 MWh-équivalent)
+    # de capacité ramené à une base horaire (1 MW retenu 1h = 1 MWh-équivalent, hypothèse)
     cout_capacite = (ecart_pointe_pts / 100) * (params["prix_capacite_illustratif_eur_par_mw_an"] / 8760)
 
     prime_risque = prime_risque_eur_mwh
@@ -242,9 +288,8 @@ def plot_price_waterfall(metrics: dict, params: dict, prime_risque_eur_mwh: floa
     plt.close(fig)
 
     return {
-        "ecart_percentile_prix": ecart_percentile,
-        "ecart_contribution_pointe_pts": ecart_pointe_pts,
         "cout_forme_eur_mwh": cout_forme,
+        "ecart_contribution_pointe_pts": ecart_pointe_pts,
         "cout_capacite_eur_mwh": cout_capacite,
         "prime_risque_eur_mwh": prime_risque,
         "marge_eur_mwh": marge,
@@ -252,43 +297,10 @@ def plot_price_waterfall(metrics: dict, params: dict, prime_risque_eur_mwh: floa
     }
 
 
-def compute_real_climate_risk(daily_hdd: pd.DataFrame, conso_france_annuelle_mwh: float) -> dict:
-    """Variabilité interannuelle RÉELLE des degrés-jours (2018-2025, hors 2020) et
-    traduction en risque volume et prix pour un portefeuille de taille illustrative."""
-    annual_hdd = (
-        daily_hdd[(daily_hdd["annee"] >= 2018) & (daily_hdd["annee"] <= 2025) & (daily_hdd["annee"] != 2020)]
-        .groupby("annee")["hdd"]
-        .sum()
-    )
-    hdd_mean = float(annual_hdd.mean())
-    hdd_std = float(annual_hdd.std())
-
-    part_marche = PARAMETRES["part_marche_portefeuille_illustratif_pct"] / 100
-    hdd_coef_systeme_mw = 1515.0  # coefficient réel estimé (rapport.md, section 4)
-    hdd_coef_portefeuille_mw = hdd_coef_systeme_mw * part_marche
-
-    variation_volume_mwh = hdd_coef_portefeuille_mw * hdd_std * 24  # écart-type -> MWh sur l'année
-    variation_cout_eur = variation_volume_mwh * PARAMETRES["volatilite_prix_illustrative_eur_par_mwh"]
-
-    portefeuille_volume_mwh = conso_france_annuelle_mwh * part_marche
-    prime_risque_eur_mwh = variation_cout_eur / portefeuille_volume_mwh
-
-    return {
-        "hdd_annuel_moyen": hdd_mean,
-        "hdd_annuel_ecart_type": hdd_std,
-        "hdd_coef_portefeuille_mw_par_dj": hdd_coef_portefeuille_mw,
-        "portefeuille_volume_annuel_mwh": portefeuille_volume_mwh,
-        "variation_volume_ecart_type_mwh": variation_volume_mwh,
-        "variation_cout_ecart_type_eur": variation_cout_eur,
-        "prime_risque_eur_mwh": prime_risque_eur_mwh,
-    }
-
-
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
     hourly = load_hourly()
-    hourly = add_price_rank(hourly)
     hourly = flag_peak_hours(hourly, PARAMETRES["seuil_heures_pointe"])
     daily_hdd = load_daily_hdd()
 
@@ -296,22 +308,13 @@ def main() -> None:
     metrics = compute_profile_metrics(hourly, profiles)
     plot_profile_comparison(metrics)
 
-    # Consommation annuelle française réelle (moyenne des années complètes, hors 2020)
-    annual_conso = (
-        hourly[(hourly["annee"] >= 2018) & (hourly["annee"] <= 2025) & (hourly["annee"] != 2020)]
-        .groupby("annee")["consommation"]
-        .sum()
-    )
-    conso_france_annuelle_mwh = float(annual_conso.mean())
-
-    climate_risk = compute_real_climate_risk(daily_hdd, conso_france_annuelle_mwh)
-    waterfall = plot_price_waterfall(metrics, PARAMETRES, climate_risk["prime_risque_eur_mwh"])
+    risk = compute_real_risk_premium(hourly, daily_hdd, PARAMETRES)
+    waterfall = plot_price_waterfall(metrics, PARAMETRES, risk["prime_risque_eur_mwh"])
 
     results = {
         "parametres": PARAMETRES,
-        "conso_france_annuelle_moyenne_mwh": conso_france_annuelle_mwh,
         "metriques_profils": metrics,
-        "risque_climatique_reel": climate_risk,
+        "risque_climatique_reel": risk,
         "construction_prix": waterfall,
     }
     (OUT_DIR / "key_results_pricing.json").write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -5,7 +5,8 @@ construit pour illustrer une compréhension du métier de **pricing analyst** (r
 volume, thermosensibilité, merit order, mécanisme de capacité, prix négatifs) avec des
 données ouvertes et un code reproductible.
 
-Trois volets, tous construits sur les mêmes données RTE éCO2mix (2018-2026) :
+Trois volets, construits sur les données RTE éCO2mix (2018-2026) et, pour le volet
+pricing, sur les prix day-ahead réels ENTSO-E de la même période :
 
 1. **Thermosensibilité de la consommation** (modèle prédictif, testé hors échantillon)
    → [`outputs/rapport.md`](outputs/rapport.md)
@@ -26,9 +27,13 @@ Trois volets, tous construits sur les mêmes données RTE éCO2mix (2018-2026) :
 > entre 2018 et 2026** — la mécanique derrière la fréquence croissante des prix bas /
 > négatifs à la mi-journée.
 
-> **Un profil de consommation thermosensible génère un surcoût indicatif d'≈ 7,5 €/MWh
+> **Un profil de consommation thermosensible génère un surcoût indicatif d'≈ 7,8 €/MWh
 > par rapport à un profil plat**, décomposé en coût de forme, coût de capacité et prime
-> de risque volume — chaque composante tracée à ses hypothèses de calcul.
+> de risque volume — 3 composantes sur 4 calculées sur prix de marché réels (ENTSO-E).
+
+> **La fréquence des heures à prix négatif est passée de 0,1 % en 2018 à 5,9 % en 2025**
+> (données ENTSO-E réelles) — sur ces heures, la part éolien + solaire atteint 27 % en
+> moyenne contre 13 % le reste du temps.
 
 ![Relation conso/température](outputs/figures/01_scatter_conso_temperature.png)
 ![Merit order](outputs/figures/11_merit_order_journee_type.png)
@@ -43,18 +48,22 @@ Trois volets, tous construits sur les mêmes données RTE éCO2mix (2018-2026) :
 │   ├── build_dataset.py       # Fusion + feature engineering -> dataset journalier
 │   ├── model_consumption.py   # Régression thermosensibilité (HDD/CDD)
 │   ├── explore_market.py      # Merit order, courbe monotone, duck curve, etc.
+│   ├── fetch_price.py         # Téléchargement prix day-ahead FR (ENTSO-E, clé requise)
+│   ├── model_price.py         # Régression prix réel ~ demande + renouvelable + nucléaire
 │   └── pricing.py             # Construction du prix : coût de forme, capacité, risque
 ├── data/
 │   ├── raw/                   # Données brutes téléchargées (ignorées par git, ~1M+ lignes)
 │   └── processed/
-│       └── daily_dataset.csv  # Dataset journalier final (conso, temp, calendrier)
+│       ├── daily_dataset.csv        # Dataset journalier (conso, temp, calendrier)
+│       └── hourly_price_dataset.csv # Dataset horaire conso + mix + prix réel
 ├── outputs/
 │   ├── rapport.md             # Rapport thermosensibilité
 │   ├── rapport_marche.md      # Rapport fondamentaux marché (merit order, capacité...)
-│   ├── rapport_pricing.md     # Rapport construction du prix d'un contrat
-│   ├── figures/                # Graphiques générés (01-05 : thermosensibilité, 11-15 : marché, 21-22 : pricing)
+│   ├── rapport_pricing.md     # Rapport construction du prix d'un contrat (données réelles)
+│   ├── figures/                # Graphiques générés (01-05 : thermo, 11-15 : marché, 21-22 : pricing, 31-33 : prix réel)
 │   ├── key_results.json       # Chiffres clés (thermosensibilité)
 │   ├── key_results_marche.json # Chiffres clés (fondamentaux marché)
+│   ├── key_results_price.json # Chiffres clés (régression prix réel)
 │   ├── key_results_pricing.json # Chiffres clés (construction du prix)
 │   └── model_summary.txt      # Sortie statsmodels complète (régression OLS)
 └── requirements.txt
@@ -78,11 +87,31 @@ python src/model_consumption.py
 # 4. Fondamentaux marché (merit order, courbe monotone, duck curve...)
 python src/explore_market.py
 
-# 5. Construction du prix (coût de forme, capacité, prime de risque)
+# 5. Prix day-ahead réel (nécessite une clé ENTSO-E gratuite, voir ci-dessous)
+python src/fetch_price.py --start-year 2018 --end-year 2025
+python src/model_price.py
+
+# 6. Construction du prix (coût de forme, capacité, prime de risque)
 python src/pricing.py
 ```
 
 Les figures et chiffres clés sont régénérés dans `outputs/`.
+
+### Obtenir une clé ENTSO-E (étape 5)
+
+Nécessaire pour `fetch_price.py` uniquement (les autres étapes fonctionnent sans) :
+
+1. Créer un compte sur [transparency.entsoe.eu](https://transparency.entsoe.eu/)
+2. Envoyer un email à `transparency@entsoe.eu`, objet "Restful API access", avec
+   l'adresse email du compte
+3. Une fois l'accès accordé (~3 jours ouvrés), générer un token dans
+   *My Account Settings*
+4. Définir la variable d'environnement avant de lancer le script :
+   `$env:ENTSOE_API_KEY = "votre_clé"` (PowerShell) ou `export ENTSOE_API_KEY=...` (bash)
+
+La clé n'est jamais écrite dans un fichier du dépôt ; `data/raw/` (où atterrit le CSV de
+prix téléchargé) est ignoré par git, mais `data/processed/hourly_price_dataset.csv`
+(sans donnée sensible) est versionné pour que le dépôt reste exploitable sans clé.
 
 ## Méthode en bref
 
@@ -104,6 +133,7 @@ Les figures et chiffres clés sont régénérés dans `outputs/`.
 |---|---|---|
 | RTE éCO2mix (ODRE) | Consommation, mix de production | https://odre.opendatasoft.com/explore/dataset/eco2mix-national-cons-def/ |
 | Open-Meteo | Températures horaires historiques | https://open-meteo.com/en/docs/historical-weather-api |
+| ENTSO-E Transparency Platform | Prix day-ahead réel France | https://transparency.entsoe.eu/ |
 
 ## Limites (assumées, détaillées dans le rapport)
 

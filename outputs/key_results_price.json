@@ -1,0 +1,29 @@
+{
+  "periode": [
+    "2018-01-01",
+    "2026-01-01"
+  ],
+  "n_heures": 70138,
+  "n_heures_prix_negatif": 1220,
+  "pct_heures_prix_negatif": 1.7394279848299068,
+  "part_renouvelable_moyenne_heures_negatives_pct": 27.099253710752347,
+  "part_renouvelable_moyenne_globale_pct": 13.210146895527759,
+  "prix_moyen_eur_mwh": 90.31193475719296,
+  "prix_ecart_type_eur_mwh": 99.54246576921273,
+  "prix_median_eur_mwh": 58.0,
+  "prix_min_eur_mwh": -134.94,
+  "prix_max_eur_mwh": 2987.78,
+  "r2": 0.3725046798396614,
+  "coef_part_renouvelable": -344.2893318751885,
+  "coef_consommation": 0.005826101322277623,
+  "tendance_annuelle_pct_negatif": {
+    "2018": 0.1256137946785429,
+    "2019": 0.308254366936865,
+    "2020": 1.1613343959922577,
+    "2021": 0.7306770179244206,
+    "2022": 0.04567774351947013,
+    "2023": 1.6784654030600594,
+    "2024": 4.008198588020952,
+    "2025": 5.856832971800434
+  }
+}
